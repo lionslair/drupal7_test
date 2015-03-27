@@ -1,0 +1,6 @@
+[submodule "sites/all/modules/client_menu"]
+	path = sites/all/modules/client_menu
+	url = git@github.com:lionslair/client_menu.git
+[submodule "sites/all/modules/client_cms"]
+	path = sites/all/modules/client_cms
+	url = git@github.com:lionslair/client_cms.git
