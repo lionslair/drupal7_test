@@ -6,10 +6,7 @@
  */
 
 function webform_views_data() {
-
-  /**
-   * Webform table definitions.
-   */
+  // Webform table definitions.
   $data['webform']['table']['group'] = t('Webform');
   $data['webform']['table']['base'] = array(
     'field' => 'nid',
@@ -66,9 +63,7 @@ function webform_views_data() {
     ),
   );
 
-  /**
-   * Submissions table definitions.
-   */
+  // Submissions table definitions.
   $data['webform_submissions']['table']['group'] = t('Webform submissions');
   $data['webform_submissions']['table']['base'] = array(
     'field' => 'sid',
@@ -342,9 +337,7 @@ function webform_views_data() {
     ),
   );
 
-  /**
-   * Submission data table definitions.
-   */
+  // Submission data table definitions.
   $data['webform_submitted_data']['table']['group'] = t('Webform submission data');
 
   // Raw access to the submitted values. This usually will only be used for
@@ -574,7 +567,7 @@ function webform_views_pre_view($view, $display_id, $args) {
         if (webform_component_implements($component['type'], 'view_field')) {
           $new_fields = webform_component_invoke($component['type'], 'view_field', $component, $new_fields);
         }
-        foreach($new_fields as $sub_id => $new_field) {
+        foreach ($new_fields as $sub_id => $new_field) {
           $field_id = $new_id . ($sub_id ? '_' . $sub_id : '');
           $fields[$field_id] = $new_field;
           $new_columns[$field_id] = $field_id;

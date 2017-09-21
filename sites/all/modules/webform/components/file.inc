@@ -27,6 +27,7 @@ function _webform_defaults_file() {
       'progress_indicator' => 'throbber',
       'title_display' => 0,
       'description' => '',
+      'description_above' => FALSE,
       'attributes' => array(),
       'private' => FALSE,
       'analysis' => FALSE,
@@ -44,6 +45,10 @@ function _webform_theme_file() {
       'file' => 'components/file.inc',
     ),
     'webform_display_file' => array(
+      'render element' => 'element',
+      'file' => 'components/file.inc',
+    ),
+    'webform_managed_file' => array(
       'render element' => 'element',
       'file' => 'components/file.inc',
     ),
@@ -161,9 +166,10 @@ function _webform_edit_file($component) {
       '#type' => 'textfield',
       '#title' => t('Rename files'),
       '#default_value' => $component['extra']['rename'],
-      '#description' => t('You may optionally use tokens to create a pattern used to rename files upon submission. Omit the extension; it will be added automatically.').' '.theme('webform_token_help', array('groups' => array('node', 'submission'))),
+      '#description' => t('You may optionally use tokens to create a pattern used to rename files upon submission. Omit the extension; it will be added automatically.') . ' ' . theme('webform_token_help', array('groups' => array('node', 'submission'))),
       '#weight' => 6,
       '#element_validate' => array('_webform_edit_file_rename_validate'),
+      '#access' => webform_variable_get('webform_token_access'),
     );
 
     $form['display']['progress_indicator'] = array(
@@ -216,12 +222,12 @@ function _webform_edit_file_size_validate($element) {
   if (!empty($element['#value'])) {
     $set_filesize = parse_size($element['#value']);
     if ($set_filesize == FALSE) {
-      form_error($element, t('File size @value is not a valid filesize. Use a value such as 2 MB or 800 KB.', array('@value' => $element['#value'])));
+      form_error($element, t('File size @value is not a valid file size. Use a value such as 2 MB or 800 KB.', array('@value' => $element['#value'])));
     }
     else {
       $max_filesize = parse_size(file_upload_max_size());
       if ($max_filesize < $set_filesize) {
-        form_error($element, t('An upload size of @value is too large, you are allow to upload files @max or less.', array('@value' => $element['#value'], '@max' => format_size($max_filesize))));
+        form_error($element, t('An upload size of @value is too large. You are allowed to upload files that are @max or less.', array('@value' => $element['#value'], '@max' => format_size($max_filesize))));
       }
     }
   }
@@ -307,12 +313,14 @@ function theme_webform_edit_file_extensions($variables) {
   }
 
   // Add the row for additional types.
-  $row = array();
-  $title = $element['addextensions']['#title'];
-  $element['addextensions']['#title'] = NULL;
-  $row[] = array('data' => $title, 'colspan' => 2);
-  $row[] = drupal_render($element['addextensions']);
-  $rows[] = $row;
+  if (!isset($element['addextensions']['#access']) || $element['addextensions']['#access']) {
+    $row = array();
+    $title = $element['addextensions']['#title'];
+    $element['addextensions']['#title'] = NULL;
+    $row[] = array('data' => $title, 'colspan' => 2);
+    $row[] = drupal_render($element['addextensions']);
+    $rows[] = $row;
+  }
 
   $header = array(array('data' => t('Category'), 'colspan' => '2'), array('data' => t('Types')));
 
@@ -342,6 +350,7 @@ function _webform_render_file($component, $value = NULL, $filter = TRUE, $submis
 
   $element = array(
     '#type' => 'managed_file',
+    '#theme' => 'webform_managed_file',
     '#title' => $filter ? webform_filter_xss($component['name']) : $component['name'],
     '#title_display' => $component['extra']['title_display'] ? $component['extra']['title_display'] : 'before',
     '#required' => $component['required'],
@@ -368,6 +377,43 @@ function _webform_render_file($component, $value = NULL, $filter = TRUE, $submis
 
   return $element;
 }
+
+/**
+ * Returns HTML for a webform managed file element.
+ *
+ * See #2495821 and #2497909. The core theme_file_managed_file creates a
+ * wrapper around the element with the element's id, thereby creating 2 elements
+ * with the same id.
+ *
+ * @param $variables
+ *   An associative array containing:
+ *   - element: A render element representing the file.
+ *
+ * @return string
+ */
+function theme_webform_managed_file($variables) {
+  $element = $variables['element'];
+
+  $attributes = array();
+
+  // For webform use, do not add the id to the wrapper.
+  //if (isset($element['#id'])) {
+  //  $attributes['id'] = $element['#id'];
+  //}
+
+  if (!empty($element['#attributes']['class'])) {
+    $attributes['class'] = (array) $element['#attributes']['class'];
+  }
+  $attributes['class'][] = 'form-managed-file';
+
+  // This wrapper is required to apply JS behaviors and CSS styling.
+  $output = '';
+  $output .= '<div' . drupal_attributes($attributes) . '>';
+  $output .= drupal_render_children($element);
+  $output .= '</div>';
+  return $output;
+}
+
 
 /**
  * Implements _webform_submit_component().
@@ -406,7 +452,7 @@ function webform_file_allow_access($element) {
 /**
  * Implements _webform_display_component().
  */
-function _webform_display_file($component, $value, $format = 'html') {
+function _webform_display_file($component, $value, $format = 'html', $submission = array()) {
   $fid = isset($value[0]) ? $value[0] : NULL;
   return array(
     '#title' => $component['name'],

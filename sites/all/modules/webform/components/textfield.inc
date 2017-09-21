@@ -19,12 +19,14 @@ function _webform_defaults_textfield() {
     'extra' => array(
       'width' => '',
       'maxlength' => '',
+      'minlength' => '',
       'field_prefix' => '',
       'field_suffix' => '',
       'disabled' => 0,
       'unique' => 0,
       'title_display' => 0,
       'description' => '',
+      'description_above' => FALSE,
       'placeholder' => '',
       'attributes' => array(),
       'private' => FALSE,
@@ -101,7 +103,7 @@ function _webform_edit_textfield($component) {
     '#type' => 'checkbox',
     '#title' => t('Disabled'),
     '#return_value' => 1,
-    '#description' => t('Make this field non-editable. Useful for setting an unchangeable default value.'),
+    '#description' => t('Make this field non-editable. Useful for displaying default value. Changeable via JavaScript or developer tools.'),
     '#weight' => 11,
     '#default_value' => $component['extra']['disabled'],
     '#parents' => array('extra', 'disabled'),
@@ -124,6 +126,16 @@ function _webform_edit_textfield($component) {
     '#maxlength' => 10,
     '#weight' => 2,
     '#parents' => array('extra', 'maxlength'),
+  );
+  $form['validation']['minlength'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Minlength'),
+    '#default_value' => $component['extra']['minlength'],
+    '#description' => t('Minimum length of the textfield value. The component may still be empty unless it is set as Required.'),
+    '#size' => 5,
+    '#maxlength' => 10,
+    '#weight' => 3,
+    '#parents' => array('extra', 'minlength'),
   );
   return $form;
 }
@@ -178,6 +190,9 @@ function _webform_render_textfield($component, $value = NULL, $filter = TRUE, $s
   if ($component['extra']['maxlength'] > 0) {
     $element['#maxlength'] = $component['extra']['maxlength'];
   }
+  if ($component['extra']['minlength'] > 0) {
+    $element['#minlength'] = $component['extra']['minlength'];
+  }
 
   if (isset($value[0])) {
     $element['#default_value'] = $value[0];
@@ -189,7 +204,7 @@ function _webform_render_textfield($component, $value = NULL, $filter = TRUE, $s
 /**
  * Implements _webform_display_component().
  */
-function _webform_display_textfield($component, $value, $format = 'html') {
+function _webform_display_textfield($component, $value, $format = 'html', $submission = array()) {
   return array(
     '#title' => $component['name'],
     '#title_display' => $component['extra']['title_display'] ? $component['extra']['title_display'] : 'before',
@@ -261,6 +276,14 @@ function _webform_analysis_textfield($component, $sids = array(), $single = FALS
  */
 function _webform_table_textfield($component, $value) {
   return check_plain(empty($value[0]) ? '' : $value[0]);
+}
+
+/**
+ * Implements _webform_action_set_component().
+ */
+function _webform_action_set_textfield($component, &$element, &$form_state, $value) {
+  $element['#value'] = $value;
+  form_set_value($element, $value, $form_state);
 }
 
 /**
